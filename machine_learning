@@ -1,0 +1,82 @@
+# Importar las librerías necesarias
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+
+# Cargar o crear el conjunto de datos desde el archivo CSV
+try:
+    # Intentar cargar datos existentes del archivo CSV
+    df = pd.read_csv('tabla_multiplicacion.csv')
+except FileNotFoundError:
+    # Si no existe el archivo, crear datos iniciales
+    print("El archivo 'tabla_multiplicacion.csv' no se encontró. Se crearán datos iniciales.")
+    data = {
+        'pregunta': [5] * 15,
+        'numero': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3, 4, 8, 9, 6],
+        'respuesta': [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 12, 25, 36, 46, 32],
+        'es_correcto': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
+    }
+    df = pd.DataFrame(data)
+    df.to_csv('tabla_multiplicacion.csv', index=False)
+
+# Separar las características y etiquetas
+X = df[['pregunta', 'numero', 'respuesta']]  # Características
+y = df['es_correcto']                         # Etiqueta
+
+# Dividir el conjunto de datos en entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Entrenar el modelo de Regresión Logística
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Evaluar el modelo
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print("Precisión del modelo:", accuracy)
+print("\nReporte de clasificación:\n", classification_report(y_test, y_pred, target_names=["Incorrecto", "Correcto"], labels=[0, 1]))
+
+# Interacción con el usuario en tres rondas
+print("\nBienvenido al sistema de preguntas de la tabla del 5.")
+aciertos = 0
+
+for ronda in range(1, 4):
+    print(f"Ronda {ronda}:")
+    try:
+        numero = int(input("¿Por cuál número quieres multiplicar 5? "))
+        respuesta = int(input(f"¿Cuál es tu respuesta para 5 * {numero}? "))
+
+        # Calcular la respuesta correcta
+        respuesta_correcta = 5 * numero
+
+        # Crear un DataFrame con la respuesta del usuario
+        nueva_pregunta = pd.DataFrame({'pregunta': [5], 'numero': [numero], 'respuesta': [respuesta]})
+        
+        # Predecir si es correcto o incorrecto
+        prediccion = model.predict(nueva_pregunta)
+
+        # Determinar si la respuesta es correcta
+        if respuesta == respuesta_correcta:
+            es_correcto = 1
+            aciertos += 1
+            print("¡Correcto!\n")
+        else:
+            es_correcto = 0
+            print(f"Incorrecto, la respuesta correcta es: {respuesta_correcta}\n")
+
+        # Guardar la respuesta del usuario en el DataFrame
+        df = pd.concat([df, pd.DataFrame({'pregunta': [5], 'numero': [numero], 'respuesta': [respuesta], 'es_correcto': [es_correcto]})])
+
+    except ValueError:
+        print("Por favor, ingresa un número válido.\n")
+
+# Guardar el DataFrame actualizado en el archivo CSV
+df.to_csv('tabla_multiplicacion.csv', index=False)
+
+# Evaluación final de las rondas
+if aciertos >= 2:
+    print("¡Excelente! Tienes 2 o más respuestas correctas, ¡sigue así!")
+else:
+    print("Necesitas estudiar un poco más. Intenta repasar la tabla del 5.")
+
